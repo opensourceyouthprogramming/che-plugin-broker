@@ -90,9 +90,10 @@ type Editor struct {
 }
 
 type ToolingConf struct {
-	Endpoints  []Endpoint  `json:"endpoints" yaml:"endpoints"`
-	Containers []Container `json:"containers" yaml:"containers"`
-	Editors    []Editor    `json:"editors" yaml:"editors"`
+	Endpoints    []Endpoint  `json:"endpoints" yaml:"endpoints"`
+	Containers   []Container `json:"containers" yaml:"containers"`
+	Editors      []Editor    `json:"editors" yaml:"editors"`
+	WorkspaceEnv []EnvVar    `json:"workspace-env" yaml:"workspace-env"`
 }
 
 type CheDependency struct {

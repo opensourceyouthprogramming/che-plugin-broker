@@ -18,8 +18,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	jsonrpc "github.com/eclipse/che-go-jsonrpc"
 	"github.com/eclipse/che-go-jsonrpc/event"
@@ -31,6 +33,7 @@ import (
 
 var (
 	bus = event.NewBus()
+	pluginNumber = 0
 )
 
 // Start executes plugins metas processing and sends data to Che master
@@ -43,11 +46,11 @@ func Start(metas []model.PluginMeta) {
 	pubStarted()
 
 	// Clear any existing plugins from dir
-	log.Println("Cleaning /plugins dir")
-	err := clearDir("/plugins")
-	if err != nil {
-		log.Printf("WARN: failed to clear /plugins directory: %s", err)
-	}
+	//log.Println("Cleaning /plugins dir")
+	//err := clearDir("/plugins")
+	//if err != nil {
+	//	log.Printf("WARN: failed to clear /plugins directory: %s", err)
+	//}
 
 	for _, meta := range metas {
 		err := processPlugin(meta)
@@ -174,6 +177,8 @@ func resolveToolingConfig(workDir string) error {
 		return err
 	}
 
+	addPortToTooling(tooling)
+
 	return storage.AddTooling(tooling)
 }
 
@@ -219,3 +224,26 @@ func copyDependencies(workDir string) error {
 
 	return nil
 }
+
+func addPortToTooling(toolingConf *model.ToolingConf) {
+	port := findPort()
+	sPort := strconv.Itoa(port)
+	endpointName := "port" + sPort
+	theiaEnvVar := "THEIA_PLUGIN_ENDPOINT_ADDRESS_" + strconv.Itoa(pluginNumber)
+	pluginNumber++
+
+	toolingConf.Containers[0].Ports = append(toolingConf.Containers[0].Ports, model.ExposedPort{ExposedPort: port})
+	toolingConf.Endpoints = append(toolingConf.Endpoints, model.Endpoint{
+		Name: endpointName,
+		Public:false,
+		TargetPort:port,
+	})
+	toolingConf.Containers[0].Env = append(toolingConf.Containers[0].Env, model.EnvVar{Name:"THEIA_PLUGIN_ENDPOINT_PORT", Value:sPort})
+	toolingConf.WorkspaceEnv = append(toolingConf.WorkspaceEnv, model.EnvVar{Name:theiaEnvVar, Value:"ws://" + endpointName + ":" + sPort})
+}
+
+func findPort() int {
+	return 4000 + rand.Intn(6000)
+}
+
+
