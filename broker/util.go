@@ -20,6 +20,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -43,6 +44,20 @@ func download(URL string, destPath string) error {
 	}
 
 	return nil
+}
+
+func copyResource(src string, dest string) error {
+	/*return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		filepath.Rel()
+		dest1 =
+		if info.IsDir() {
+			return os.MkdirAll(dest1)
+		} else {
+			return copyFile(path, dest1)
+		}
+	})*/
+	cmd := exec.Command("cp", "-r", src, dest)
+	return cmd.Run()
 }
 
 func copyFile(src string, dest string) error {

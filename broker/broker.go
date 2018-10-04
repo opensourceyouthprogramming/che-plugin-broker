@@ -16,24 +16,23 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/eclipse/che-go-jsonrpc"
+	"github.com/eclipse/che-go-jsonrpc/event"
+	"github.com/eclipse/che-plugin-broker/cfg"
+	"github.com/eclipse/che-plugin-broker/model"
+	"github.com/eclipse/che-plugin-broker/storage"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
-
-	jsonrpc "github.com/eclipse/che-go-jsonrpc"
-	"github.com/eclipse/che-go-jsonrpc/event"
-	"github.com/eclipse/che-plugin-broker/cfg"
-	"github.com/eclipse/che-plugin-broker/model"
-	"github.com/eclipse/che-plugin-broker/storage"
-	yaml "gopkg.in/yaml.v2"
 )
 
 var (
 	bus = event.NewBus()
-	pluginNumber = 0
 )
 
 // Start executes plugins metas processing and sends data to Che master
@@ -206,8 +205,8 @@ func copyDependencies(workDir string) error {
 		case dep.Location != "":
 			fileDest := resolveDestPath(dep.Location, "/plugins")
 			fileSrc := filepath.Join(workDir, dep.Location)
-			log.Printf("Copying file '%s' to '%s'", fileSrc, fileDest)
-			if err = copyFile(fileSrc, fileDest); err != nil {
+			log.Print("Copying resource '%s' to '%s'", fileSrc, fileDest)
+			if err = copyResource(fileSrc, fileDest); err != nil {
 				return err
 			}
 		case dep.URL != "":
@@ -229,9 +228,15 @@ func addPortToTooling(toolingConf *model.ToolingConf) {
 	port := findPort()
 	sPort := strconv.Itoa(port)
 	endpointName := "port" + sPort
-	theiaEnvVar := "THEIA_PLUGIN_ENDPOINT_ADDRESS_" + strconv.Itoa(pluginNumber)
-	pluginNumber++
+	var re = regexp.MustCompile(`[^a-z_0-9]+`)
+	prettyID := re.ReplaceAllString(toolingConf.ID, `_`)
+	theiaEnvVar := "THEIA_PLUGIN_REMOTE_ENDPOINT_che_" + prettyID
 
+	if len(toolingConf.Containers) != 1 {
+		m := fmt.Sprintf("Plugin '%s' should contain one and only sidecar container but contains '%d'", toolingConf.ID, len(toolingConf.Containers))
+		pubFailed(m)
+		log.Fatal(m)
+	}
 	toolingConf.Containers[0].Ports = append(toolingConf.Containers[0].Ports, model.ExposedPort{ExposedPort: port})
 	toolingConf.Endpoints = append(toolingConf.Endpoints, model.Endpoint{
 		Name: endpointName,
