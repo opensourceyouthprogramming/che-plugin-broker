@@ -27,3 +27,31 @@ plugin is considered non-remote
  `THEIA_PLUGIN_ENDPOINT_PORT` and value `port`
 - Evaluates Che workspace sidecar config for running Theia plugin as Che remote plugin in a sidecar
 
+### Development
+## Build
+- build all the code:
+```shell
+CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo ./...
+```
+- build Che plugin broker binary:
+```shell
+CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o che-plugin-broker cmd/che-plugin-broker/main.go
+```
+- build Che Theia plugin broker binary:
+```shell
+CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-w -s' -a -installsuffix cgo -o theia-plugin-broker cmd/theia-plugin-broker/main.go
+```
+- run tests:
+```shell
+go test -v -race ./...
+```
+- run linters:
+```shell
+golangci-lint run -v
+```
+## Dependencies
+Dependencies in the project are managed by Go Dep.
+After you added a dependency you need to run the following command to download dependencies to vendor repo and lock file and then commit changes:
+```shell
+dep ensure
+```
