@@ -22,6 +22,7 @@ import (
 	"strconv"
 
 	"github.com/eclipse/che-go-jsonrpc"
+	"github.com/eclipse/che-plugin-broker/cfg"
 	"github.com/eclipse/che-plugin-broker/common"
 	"github.com/eclipse/che-plugin-broker/files"
 	"github.com/eclipse/che-plugin-broker/model"
@@ -207,10 +208,11 @@ func AddPortToTooling(toolingConf *model.ToolingConf, pj *PackageJSON) {
 	port := GetRndPort()
 	sPort := strconv.Itoa(port)
 	endpointName := "port" + sPort
+	k8sServiceName := cfg.RuntimeID.Workspace + endpointName
 	var re = regexp.MustCompile(`[^a-zA-Z_0-9]+`)
 	prettyID := re.ReplaceAllString(pj.Publisher+"_"+pj.Name, `_`)
 	theiaEnvVar1 := "THEIA_PLUGIN_REMOTE_ENDPOINT_" + prettyID
-	theiaEnvVarValue := "ws://" + endpointName + ":" + sPort
+	theiaEnvVarValue := "ws://" + k8sServiceName + ":" + sPort
 
 	toolingConf.Containers[0].Ports = append(toolingConf.Containers[0].Ports, model.ExposedPort{ExposedPort: port})
 	toolingConf.Endpoints = append(toolingConf.Endpoints, model.Endpoint{
